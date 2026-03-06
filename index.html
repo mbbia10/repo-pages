@@ -1,0 +1,14 @@
+---
+layout: default
+title: Release Notes
+---
+
+<h1>📢 Release Notes</h1>
+
+<div id="content">
+  {% capture changelog %}
+    {% include_relative changelog.md %}
+  {% endcapture %}
+
+  {{ changelog | markdownify }}
+</div>

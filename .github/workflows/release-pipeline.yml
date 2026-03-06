@@ -1,0 +1,39 @@
+name: Release Notes Pipeline
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          pip install PyGithub
+
+      - name: Security validation
+        run: |
+          echo "🔎 Checking for hardcoded tokens..."
+          if grep -r "ghp_" .; then
+            echo "❌ Token hardcoded encontrado!"
+            exit 1
+          else
+            echo "✅ Nenhum token encontrado"
+          fi
+
+      - name: Script validation
+        run: |
+          echo "🧪 Testando execução do script..."
+          python publish_release.py "Teste automático da pipeline"

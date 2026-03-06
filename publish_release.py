@@ -6,10 +6,13 @@ from github import Auth
 
 
 def publicar_no_pages(mensagem_release: str):
-    # 1️⃣ Segurança: Token via variável de ambiente
+
+    # 🔐 Token via variável de ambiente
     token = os.getenv("GITHUB_TOKEN")
-    repo_name = "mbbia10/repo-pages"  # ✅ Seu repositório
+    repo_name = "mbbia10/repo-pages"
     file_path = "changelog.md"
+
+    HEADER = "# 📜 Histórico de Versões\n\n------------------------------------\n\n"
 
     if not token:
         print("❌ Erro: Variável de ambiente GITHUB_TOKEN não encontrada.")
@@ -18,13 +21,12 @@ def publicar_no_pages(mensagem_release: str):
     try:
         print("🔄 Conectando à API do GitHub...")
 
-        # 🔐 Nova forma correta (sem warning de deprecated)
         auth = Auth.Token(token)
         g = Github(auth=auth)
 
         repo = g.get_repo(repo_name)
 
-        # 2️⃣ Buscar arquivo existente
+        # 📂 Buscar arquivo existente
         try:
             contents = repo.get_contents(file_path)
             conteudo_atual = contents.decoded_content.decode("utf-8")
@@ -32,10 +34,14 @@ def publicar_no_pages(mensagem_release: str):
             print(f"📂 Arquivo {file_path} encontrado. Atualizando...")
         except Exception:
             print(f"⚠️ Arquivo {file_path} não encontrado. Criando novo...")
-            conteudo_atual = "# 📜 Histórico de Versões\n\n"
+            conteudo_atual = HEADER
             sha_arquivo = None
 
-        # 3️⃣ Criar nova entrada
+        # Garantir header correto
+        if not conteudo_atual.startswith(HEADER):
+            conteudo_atual = HEADER + conteudo_atual
+
+        # 📅 Data da release
         data_hoje = datetime.now().strftime("%d/%m/%Y %H:%M")
 
         nova_entrada = (
@@ -44,11 +50,18 @@ def publicar_no_pages(mensagem_release: str):
             f"---\n\n"
         )
 
-        novo_conteudo = nova_entrada + conteudo_atual
+        # 🚫 Evitar duplicação
+        if nova_entrada in conteudo_atual:
+            print("⚠️ Essa release já existe no changelog.")
+            return
+
+        # 📌 Adicionar no topo mantendo header
+        conteudo_sem_header = conteudo_atual.replace(HEADER, "")
+        novo_conteudo = HEADER + nova_entrada + conteudo_sem_header
 
         commit_msg = f"docs: atualiza release notes via script - {data_hoje}"
 
-        # 4️⃣ Commit via API
+        # 📤 Commit via API
         if sha_arquivo:
             repo.update_file(
                 path=file_path,
@@ -72,6 +85,8 @@ def publicar_no_pages(mensagem_release: str):
 
 
 if __name__ == "__main__":
+
+    # 🧪 Validação do argumento obrigatório
     if len(sys.argv) < 2:
         print("Uso: python publish_release.py \"Texto da Release\"")
         sys.exit(1)
